@@ -1,0 +1,38 @@
+@model InventoryApp.Models.Inventory
+@{
+    ViewData["Title"] = "Edit Inventory";
+    var cats = (IEnumerable<InventoryApp.Models.Category>)ViewBag.Categories;
+}
+
+// Only Admin or Owner can access this page
+@if (!(User.IsInRole("Admin") || (User.Identity?.IsAuthenticated ?? false && Model.OwnerId == User.FindFirst("sub")?.Value)))
+{
+    <div class="alert alert-danger">You are not authorized to edit this inventory.</div>
+    return;
+}
+
+<h2>Edit Inventory</h2>
+
+<form method="post">
+    <div class="mb-3">
+        <label class="form-label">Title</label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Category</label>
+        <select asp-for="CategoryId" class="form-select">
+            <option value="">(none)</option>
+            @foreach (var c in cats)
+            {
+                <option value="@c.Id" selected="@(Model.CategoryId == c.Id)">
+                    @c.Name
+                </option>
+            }
+        </select>
+    </div>
+
+    <button class="btn btn-primary">Save</button>
+    <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.Id">Back</a>
+</form>

@@ -1,0 +1,181 @@
+@model InventoryApp.Models.Inventory
+@using InventoryApp.Models
+@{
+    ViewData["Title"] = "Inventory";
+
+    // Check if current user is admin
+    bool isAdmin = User.IsInRole("Admin");
+
+    // Check if current user is the owner of this inventory
+    bool isOwner = User.Identity?.IsAuthenticated ?? false && Model.OwnerId == User.FindFirst("sub")?.Value;
+
+    // Combined: Admin or Owner
+    bool canManage = isAdmin || isOwner;
+
+    var averages = (IDictionary<int, double?>)ViewBag.Averages;
+}
+
+<div class="d-flex justify-content-between align-items-center">
+    <h2>@Model.Title</h2>
+    <div>
+        @* Only Admin or Owner can Edit/Delete inventory *@
+        @if (canManage)
+        {
+            <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
+            <form method="post" asp-action="Delete" asp-route-id="@Model.Id" class="d-inline">
+                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete inventory?')">Delete</button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="mb-2">
+    <strong>Category:</strong> @Model.Category?.Name ?? "(none)"
+    <br />
+    <strong>Tags:</strong> @string.Join(", ", Model.InventoryTags.Select(it => it.Tag.Name))
+</div>
+
+<h5>Fields</h5>
+<table class="table table-sm">
+    <thead>
+        <tr><th>Name</th><th>Type</th><th>Visible</th><th>Avg (if numeric)</th>
+            @if (canManage)
+            {
+                <th>Actions</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var f in Model.Fields.OrderBy(x => x.Order))
+        {
+            <tr>
+                <td>@f.FieldName</td>
+                <td>@f.FieldType</td>
+                <td>@(f.IsVisible ? "Yes" : "No")</td>
+                <td>
+                    @if (f.FieldType == FieldType.Number)
+                    {
+                        var avg = averages.ContainsKey(f.Id) ? averages[f.Id] : null;
+                        @((avg.HasValue ? avg.Value.ToString("0.###") : "-"))
+                    }
+                </td>
+                @if (canManage)
+                {
+                    <td>
+                        <form method="post" asp-action="RenameField" class="d-flex gap-2 align-items-center">
+                            <input type="hidden" name="fieldId" value="@f.Id" />
+                            <input name="newName" class="form-control form-control-sm" placeholder="Rename..." />
+                            <button class="btn btn-sm btn-outline-primary">Rename</button>
+                        </form>
+                    </td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (canManage)
+{
+    <h5>Add Item</h5>
+    <form asp-controller="Items" asp-action="Create" method="post">
+        <input type="hidden" name="InventoryId" value="@Model.Id" />
+        @foreach (var f in Model.Fields.OrderBy(x => x.Order).Where(x => x.IsVisible))
+        {
+            <div class="mb-2">
+                <label class="form-label">@f.FieldName (@f.FieldType)</label>
+                @{
+                    var name = $"Values[{f.Id}]";
+                }
+                @switch (f.FieldType)
+                {
+                    case FieldType.String:
+                        <input name="@name" class="form-control" />
+                        break;
+                    case FieldType.Number:
+                        <input name="@name" class="form-control" type="number" step="any" />
+                        break;
+                    case FieldType.Boolean:
+                        <select name="@name" class="form-select">
+                            <option value="">(unset)</option>
+                            <option value="true">true</option>
+                            <option value="false">false</option>
+                        </select>
+                        break;
+                    case FieldType.Date:
+                        <input name="@name" class="form-control" type="date" />
+                        break;
+                }
+            </div>
+        }
+        <button class="btn btn-primary">Add</button>
+    </form>
+
+    <h5 class="mt-4">Add New Field</h5>
+    <form method="post" asp-action="AddField">
+        <input type="hidden" name="inventoryId" value="@Model.Id" />
+        <div class="row g-2">
+            <div class="col-md-4"><input name="name" class="form-control" placeholder="Field name" /></div>
+            <div class="col-md-3">
+                <select name="type" class="form-select">
+                    <option value="1">String</option>
+                    <option value="2">Number</option>
+                    <option value="3">Boolean</option>
+                    <option value="4">Date</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input name="order" class="form-control" type="number" value="@Model.Fields.Count()" />
+            </div>
+            <div class="col-md-2 form-check">
+                <input type="checkbox" class="form-check-input" name="isVisible" checked />
+                <label class="form-check-label">Visible</label>
+            </div>
+            <div class="col-md-1">
+                <button class="btn btn-outline-primary">Add</button>
+            </div>
+        </div>
+    </form>
+}
+
+<h5 class="mt-4">Items</h5>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>#</th>
+            @foreach (var f in Model.Fields.OrderBy(x => x.Order))
+            {
+                <th>@f.FieldName</th>
+            }
+            @if (canManage)
+            {
+                <th>Actions</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            var index = 1;
+        }
+        @foreach (var it in Model.Items)
+        {
+            <tr>
+                <td>@index</td>
+                @foreach (var f in Model.Fields.OrderBy(x => x.Order))
+                {
+                    var v = it.Values.FirstOrDefault(val => val.FieldId == f.Id)?.Value;
+                    <td>@(string.IsNullOrEmpty(v) ? "-" : v)</td>
+                }
+                @if (canManage)
+                {
+                    <td>
+                        <form asp-controller="Items" asp-action="Delete" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@it.Id" />
+                            <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete item?')">Delete</button>
+                        </form>
+                    </td>
+                }
+            </tr>
+            index++;
+        }
+    </tbody>
+</table>

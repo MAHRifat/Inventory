@@ -1,0 +1,66 @@
+@model IEnumerable<InventoryApp.Models.Inventory>
+@{
+    ViewData["Title"] = "Inventories";
+    var cats = (IEnumerable<InventoryApp.Models.Category>)ViewBag.Categories;
+    var tags = (IEnumerable<InventoryApp.Models.Tag>)ViewBag.AllTags;
+    string q = ViewBag.Query as string ?? "";
+    int? selectedCat = ViewBag.SelectedCategoryId as int?;
+    string selTag = ViewBag.SelectedTag as string ?? "";
+}
+
+<h2>Inventories</h2>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input name="q" value="@q" class="form-control" placeholder="Search by title" />
+    </div>
+    <div class="col-md-3">
+        <select name="categoryId" class="form-select">
+            <option value="">All Categories</option>
+            @foreach (var c in cats)
+            {
+                <option value="@c.Id" selected="@(selectedCat == c.Id)">
+                    @c.Name
+                </option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select name="tag" class="form-select">
+            <option value="">All Tags</option>
+            @foreach (var t in tags)
+            {
+                <option value="@t.Name" selected="@(selTag == t.Name)">
+                    @t.Name
+                </option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-primary w-100">Filter</button>
+    </div>
+</form>
+
+@if (User.Identity?.IsAuthenticated ?? false)
+{
+    <a class="btn btn-success mb-3" asp-action="Create">+ New Inventory</a>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr><th>Title</th><th>Category</th><th>Tags</th><th></th></tr>
+    </thead>
+    <tbody>
+    @foreach (var i in Model)
+    {
+        <tr>
+            <td>@i.Title</td>
+            <td>@i.Category?.Name</td>
+            <td>@string.Join(", ", i.InventoryTags.Select(it => it.Tag.Name))</td>
+            <td>
+                <a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@i.Id">Open</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

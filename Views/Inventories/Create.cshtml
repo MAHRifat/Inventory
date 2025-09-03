@@ -1,0 +1,98 @@
+@model InventoryApp.ViewModels.InventoryCreateVm
+@using InventoryApp.Models
+@{
+    ViewData["Title"] = "Create Inventory";
+    var cats = (IEnumerable<Category>)ViewBag.Categories;
+}
+
+<h2>Create Inventory</h2>
+
+<form method="post">
+    <div class="mb-3">
+        <label class="form-label">Title</label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Category</label>
+        <select asp-for="CategoryId" class="form-select">
+            <option value="">(none)</option>
+            @foreach (var c in cats)
+            {
+                <option value="@c.Id">@c.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Tags (comma separated)</label>
+        <input asp-for="TagsCsv" class="form-control" placeholder="e.g. school, math, 2025" />
+    </div>
+
+    <h5>Fields</h5>
+    <div id="fields">
+        @for (int i = 0; i < Model.Fields.Count; i++)
+        {
+            <div class="row g-2 mb-2">
+                <div class="col-md-5">
+                    <input asp-for="Fields[i].FieldName" class="form-control" placeholder="Field name" />
+                </div>
+                <div class="col-md-3">
+                    <select asp-for="Fields[i].FieldType" class="form-select">
+                        <option value="@FieldType.String">String</option>
+                        <option value="@FieldType.Number">Number</option>
+                        <option value="@FieldType.Boolean">Boolean</option>
+                        <option value="@FieldType.Date">Date</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input asp-for="Fields[i].Order" class="form-control" type="number" placeholder="Order" />
+                </div>
+                <div class="col-md-2 form-check">
+                    <input asp-for="Fields[i].IsVisible" class="form-check-input" />
+                    <label class="form-check-label">Visible</label>
+                </div>
+            </div>
+        }
+    </div>
+
+    <button type="button" id="addField" class="btn btn-secondary btn-sm mb-3">+ Add Field</button>
+
+    <div>
+        <button class="btn btn-primary">Create</button>
+        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+    </div>
+</form>
+
+@section Scripts{
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('addField').addEventListener('click', () => {
+            const container = document.getElementById('fields');
+            const idx = container.querySelectorAll('.row').length;
+            const html = `
+              <div class="row g-2 mb-2">
+                <div class="col-md-5">
+                  <input name="Fields[${idx}].FieldName" class="form-control" placeholder="Field name" />
+                </div>
+                <div class="col-md-3">
+                  <select name="Fields[${idx}].FieldType" class="form-select">
+                    <option value="1">String</option>
+                    <option value="2">Number</option>
+                    <option value="3">Boolean</option>
+                    <option value="4">Date</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <input name="Fields[${idx}].Order" type="number" value="${idx}" class="form-control" />
+                </div>
+                <div class="col-md-2 form-check">
+                  <input name="Fields[${idx}].IsVisible" type="checkbox" class="form-check-input" checked />
+                  <label class="form-check-label">Visible</label>
+                </div>
+              </div>`;
+            container.insertAdjacentHTML('beforeend', html);
+        });
+    </script>
+}
