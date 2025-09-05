@@ -2,17 +2,39 @@ using InventoryApp.Data;
 using InventoryApp.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Npgsql; // <- Required for NpgsqlConnectionStringBuilder
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services
-builder.Services.AddControllersWithViews();
+// ---------------------------
+// PostgreSQL connection for Railway
+// ---------------------------
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (string.IsNullOrEmpty(databaseUrl))
+    throw new Exception("DATABASE_URL environment variable is not set.");
 
-// Use PostgreSQL instead of SQLite for Render
+var databaseUri = new Uri(databaseUrl);
+var userInfo = databaseUri.UserInfo.Split(':');
+var npgsqlConnString = new NpgsqlConnectionStringBuilder
+{
+    Host = databaseUri.Host,
+    Port = databaseUri.Port,
+    Username = userInfo[0],
+    Password = userInfo[1],
+    Database = databaseUri.AbsolutePath.TrimStart('/'),
+    SslMode = SslMode.Require,
+    TrustServerCertificate = true,
+    Pooling = true
+}.ToString();
+
+Console.WriteLine($"🔌 Using PostgreSQL connection: {npgsqlConnString}");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(npgsqlConnString));
 
-// Identity (with default UI)
+// ---------------------------
+// Identity
+// ---------------------------
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
@@ -20,11 +42,14 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
+builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
-// Production exception handler
+// ---------------------------
+// Middleware
+// ---------------------------
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -37,41 +62,42 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// MVC routes
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
-// Identity UI
 app.MapRazorPages();
 
-// Seed roles & categories
+// ---------------------------
+// Apply migrations & seed data
+// ---------------------------
 using (var scope = app.Services.CreateScope())
 {
     var sp = scope.ServiceProvider;
-    await Seed.InitializeAsync(sp);
+    var db = sp.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate(); // Apply migrations automatically
+    await Seed.InitializeAsync(sp); // Seed roles, admin, categories
 }
 
-// Render assigns a dynamic port
+// ---------------------------
+// Set Railway dynamic port
+// ---------------------------
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
 app.Urls.Add($"http://*:{port}");
 
 app.Run();
 
-// Seed class
+/// <summary>
+/// Database seeding
+/// </summary>
 public static class Seed
 {
     public static async Task InitializeAsync(IServiceProvider sp)
     {
-        // Roles
         var roleMgr = sp.GetRequiredService<RoleManager<IdentityRole>>();
         foreach (var role in new[] { "Admin", "Creator", "User" })
-        {
             if (!await roleMgr.RoleExistsAsync(role))
                 await roleMgr.CreateAsync(new IdentityRole(role));
-        }
 
-        // Admin user
         var userMgr = sp.GetRequiredService<UserManager<ApplicationUser>>();
         var adminEmail = "admin@example.com";
         var admin = await userMgr.FindByEmailAsync(adminEmail);
@@ -83,11 +109,10 @@ public static class Seed
                 Email = adminEmail,
                 EmailConfirmed = true
             };
-            await userMgr.CreateAsync(admin, "Admin#12345"); // Change password after first login
+            await userMgr.CreateAsync(admin, "Admin#12345");
             await userMgr.AddToRoleAsync(admin, "Admin");
         }
 
-        // Categories
         var db = sp.GetRequiredService<ApplicationDbContext>();
         if (!await db.Categories.AnyAsync())
         {
