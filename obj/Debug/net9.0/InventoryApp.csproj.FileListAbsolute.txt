@@ -1,5 +1,6 @@
 E:\Itrandition\InventoryApp\bin\Debug\net9.0\appsettings.Development.json
 E:\Itrandition\InventoryApp\bin\Debug\net9.0\appsettings.json
+E:\Itrandition\InventoryApp\bin\Debug\net9.0\appsettings.Production.json
 E:\Itrandition\InventoryApp\bin\Debug\net9.0\InventoryApp.staticwebassets.runtime.json
 E:\Itrandition\InventoryApp\bin\Debug\net9.0\InventoryApp.staticwebassets.endpoints.json
 E:\Itrandition\InventoryApp\bin\Debug\net9.0\InventoryApp.exe
@@ -265,6 +266,7 @@ E:\Itrandition\InventoryApp\obj\Debug\net9.0\InventoryApp.MvcApplicationPartsAss
 E:\Itrandition\InventoryApp\obj\Debug\net9.0\InventoryApp.MvcApplicationPartsAssemblyInfo.cache
 E:\Itrandition\InventoryApp\obj\Debug\net9.0\InventoryApp.RazorAssemblyInfo.cache
 E:\Itrandition\InventoryApp\obj\Debug\net9.0\InventoryApp.RazorAssemblyInfo.cs
+E:\Itrandition\InventoryApp\obj\Debug\net9.0\InventoryApp.sourcelink.json
 E:\Itrandition\InventoryApp\obj\Debug\net9.0\rjimswa.dswa.cache.json
 E:\Itrandition\InventoryApp\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
 E:\Itrandition\InventoryApp\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json

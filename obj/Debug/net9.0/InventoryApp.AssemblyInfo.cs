@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("InventoryApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fc32e4a5da5f310442c67880a7f237543645dd45")]
 [assembly: System.Reflection.AssemblyProductAttribute("InventoryApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("InventoryApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
